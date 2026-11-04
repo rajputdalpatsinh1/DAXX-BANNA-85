@@ -81,13 +81,25 @@ async function signInWithGoogle() {
 }
 
 async function checkLogin() {
-  const { data } = await supabaseClient.auth.getSession();
+  const { data, error } = await supabaseClient.auth.getSession();
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
 
   if (data.session) {
     document.getElementById("login").style.display = "none";
     document.getElementById("dashboard").style.display = "block";
   }
 }
+
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (session) {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+  }
+});
 
 checkLogin();
 </script>
