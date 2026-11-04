@@ -66,21 +66,40 @@ document.getElementById('folderName').innerText=name;
 <script>
 const supabaseClient = supabase.createClient(
   "https://dsxmzcicvjtzlrvjbnpr.supabase.co",
-  "sb_publishable_VzxflnAf_Nq-Un4yFCgTkA_jAII6J_T"
+  "sb_publishable_VzxflnAf_Nq-Un4yFCgTkA_jAI6J_T"
 );
 
-async function signInWithGoogle() {
-  const { error } = await supabaseClient.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: "https://rajputdalpatsinh1.github.io/DAXX-BANNA-11/"
-    }
-  });
-
-  if (error) alert(error.message);
+function showDashboard() {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("dashboard").style.display = "block";
 }
 
 async function checkLogin() {
+  const params = new URLSearchParams(window.location.hash.substring(1));
+  const accessToken = params.get("access_token");
+  const refreshToken = params.get("refresh_token");
+
+  if (accessToken && refreshToken) {
+    const { data, error } = await supabaseClient.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    });
+
+    if (error) {
+      alert("Login error: " + error.message);
+      return;
+    }
+
+    window.history.replaceState(
+      {},
+      document.title,
+      window.location.pathname + window.location.search
+    );
+
+    if (data.session) showDashboard();
+    return;
+  }
+
   const { data, error } = await supabaseClient.auth.getSession();
 
   if (error) {
@@ -88,17 +107,11 @@ async function checkLogin() {
     return;
   }
 
-  if (data.session) {
-    document.getElementById("login").style.display = "none";
-    document.getElementById("dashboard").style.display = "block";
-  }
+  if (data.session) showDashboard();
 }
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
-  if (session) {
-    document.getElementById("login").style.display = "none";
-    document.getElementById("dashboard").style.display = "block";
-  }
+  if (session) showDashboard();
 });
 
 checkLogin();
