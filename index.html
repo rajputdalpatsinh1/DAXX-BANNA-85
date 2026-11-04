@@ -8,7 +8,101 @@
 *{box-sizing:border-box}
 body{margin:0;background:#101522;color:white;font-family:Arial,sans-serif}
 header{padding:22px;background:#192338;text-align:center}
+h1{<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DAXX BANNA 11</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101522;color:white;font-family:Arial,sans-serif}
+header{padding:22px;background:#192338;text-align:center}
 h1{margin:0;color:#71b7ff}
+main{max-width:650px;margin:35px auto;padding:20px}
+.card{background:#202c42;padding:25px;border-radius:18px;margin-bottom:18px}
+button{width:100%;padding:15px;border:0;border-radius:10px;background:#3488ed;color:white;font-size:16px;margin-top:12px}
+input{width:100%;padding:13px;border-radius:9px;border:0;margin-top:12px}
+.folder{display:block;text-align:left;background:#293750}
+small{color:#b7c5d9}
+#dashboard{display:none}
+</style>
+</head>
+<body>
+<header>
+<h1>DAXX BANNA 11</h1>
+<p>My Personal Cloud Storage</p>
+</header>
+
+<main>
+<section class="card" id="login">
+<h2>Welcome</h2>
+<p>Sign in to use your personal file space.</p>
+<button onclick="signInWithGoogle()">
+  Continue with Google
+</button>
+</section>
+
+<section id="dashboard">
+<div class="card">
+<h2>My Storage</h2>
+<p>Your personal file space</p>
+</div>
+
+<div class="card">
+<h2>My Folders</h2>
+<button class="folder" onclick="openFolder('Photos')">📷 Photos</button>
+<button class="folder" onclick="openFolder('Videos')">🎬 Videos</button>
+<button class="folder" onclick="openFolder('Music')">🎵 Music</button>
+<button class="folder" onclick="openFolder('Documents')">📁 Documents</button>
+</div>
+
+<div class="card">
+<h2 id="folderName">Select a folder</h2>
+<input type="file" id="fileInput" multiple>
+<button onclick="alert('Drive upload abhi connect nahi hua hai.')">Import Files</button>
+<button onclick="alert('Drive connection abhi setup hona baaki hai.')">Download</button>
+<button onclick="alert('Drive connection abhi setup hona baaki hai.')">Delete</button>
+</div>
+</section>
+</main>
+
+<script>
+function openFolder(name){
+document.getElementById('folderName').innerText=name;
+}
+</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const supabaseClient = supabase.createClient(
+  "https://dsxmzcicvjtzlrvjbnpr.supabase.co",
+  "sb_publishable_VzxflnAf_Nq-Un4yFCgTkA_jAII6J_T"
+);
+
+async function signInWithGoogle() {
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: "https://rajputdalpatsinh1.github.io/DAXX-BANNA-11/"
+    }
+  });
+
+  if (error) alert(error.message);
+}
+
+async function checkLogin() {
+  const { data } = await supabaseClient.auth.getSession();
+
+  if (data.session) {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+  }
+}
+
+checkLogin();
+</script>
+</body>
+</html>:0;color:#71b7ff}
 main{max-width:650px;margin:35px auto;padding:20px}
 .card{background:#202c42;padding:25px;border-radius:18px;margin-bottom:18px}
 button{width:100%;padding:15px;border:0;border-radius:10px;background:#3488ed;color:white;font-size:16px;margin-top:12px}
