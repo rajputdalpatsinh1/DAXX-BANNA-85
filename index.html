@@ -6,164 +6,61 @@
 <title>DAXX BANNA 11</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#090d18;color:white;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif}
-header{padding:22px 18px;background:#11182a;border-bottom:1px solid #27304a}
-.logo{font-size:23px;font-weight:900;letter-spacing:1px}
-.logo span{color:#8292ff}
-small,.muted{color:#9ca9c9}
-main{padding:20px;max-width:850px;margin:auto}
-.card{background:#141c30;border:1px solid #2b3655;border-radius:20px;padding:20px;margin:15px 0}
-input,button{font:inherit;border-radius:12px;padding:12px}
-input{background:#0c1323;color:white;border:1px solid #394666;width:100%;margin:8px 0 15px}
-button{background:#6478ff;color:white;border:0;font-weight:600;cursor:pointer;margin:4px}
-.secondary{background:#263451}
-.danger{background:#b83c55}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
-.folder{background:#192542;border:1px solid #2c3b60;border-radius:18px;padding:22px 12px;color:white;text-align:center}
-.emoji{font-size:35px;display:block;margin-bottom:10px}
-.folder b{font-size:17px}
-.toolbar{display:flex;flex-wrap:wrap;gap:5px;margin:15px 0}
-.filegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.file{background:#151e32;border:1px solid #2a3653;border-radius:15px;padding:10px;min-width:0}
-.file img,.file video{width:100%;height:120px;object-fit:cover;border-radius:10px}
-.file p{font-size:13px;overflow-wrap:anywhere}
-.file label{font-size:12px;display:flex;align-items:center;gap:7px}
-.file input{width:auto;margin:5px}
-.doc{font-size:38px;text-align:center;padding:22px;background:#202c47;border-radius:10px}
-.file audio{width:100%;margin-top:8px}
-.hidden{display:none!important}
-@media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}.filegrid{grid-template-columns:repeat(3,1fr)}}
+body{margin:0;background:#101522;color:white;font-family:Arial,sans-serif}
+header{padding:22px;background:#192338;text-align:center}
+h1{margin:0;color:#71b7ff}
+main{max-width:650px;margin:35px auto;padding:20px}
+.card{background:#202c42;padding:25px;border-radius:18px;margin-bottom:18px}
+button{width:100%;padding:15px;border:0;border-radius:10px;background:#3488ed;color:white;font-size:16px;margin-top:12px}
+input{width:100%;padding:13px;border-radius:9px;border:0;margin-top:12px}
+.folder{display:block;text-align:left;background:#293750}
+small{color:#b7c5d9}
+#dashboard{display:none}
 </style>
 </head>
 <body>
-
 <header>
- <div class="logo">DAXX <span>BANNA 11</span></div>
- <small>MY PERSONAL CLOUD SPACE</small>
+<h1>DAXX BANNA 11</h1>
+<p>My Personal Cloud Storage</p>
 </header>
 
 <main>
-<section id="login" class="card">
- <h2>Welcome Back 👑</h2>
- <p class="muted">Login to your personal space</p>
- <input id="uid" placeholder="User ID">
- <input id="pass" type="password" placeholder="Password">
- <button style="width:100%" onclick="login()">Login →</button>
- <small>Demo version: any User ID and password will work.</small>
+<section class="card" id="login">
+<h2>Welcome</h2>
+<p>Sign in to use your personal file space.</p>
+<button onclick="alert('Google Drive connection abhi setup hona baaki hai.')">
+Continue with Google
+</button>
 </section>
 
-<section id="home" class="hidden">
- <h1>Welcome Back 👋</h1>
- <p class="muted">Your personal files</p>
- <div class="grid">
-  <button class="folder" onclick="openFolder('Photos')"><span class="emoji">📸</span><b>Photos</b></button>
-  <button class="folder" onclick="openFolder('Videos')"><span class="emoji">🎬</span><b>Videos</b></button>
-  <button class="folder" onclick="openFolder('Music')"><span class="emoji">🎵</span><b>Music</b></button>
-  <button class="folder" onclick="openFolder('Documents')"><span class="emoji">📁</span><b>Documents</b></button>
- </div>
- <button class="secondary" onclick="logout()">Logout</button>
-</section>
+<section id="dashboard">
+<div class="card">
+<h2>My Storage</h2>
+<p>Your personal file space</p>
+</div>
 
-<section id="inside" class="hidden">
- <button class="secondary" onclick="goHome()">← Back</button>
- <h1 id="folderTitle"></h1>
- <div class="toolbar">
-  <button onclick="document.getElementById('picker').click()">＋ Import</button>
-  <button class="secondary" onclick="selectAll()">Select All</button>
-  <button class="secondary" onclick="downloadSelected()">Download</button>
-  <button class="danger" onclick="deleteSelected()">Delete</button>
- </div>
- <input id="picker" type="file" multiple class="hidden" onchange="addFiles(event)">
- <div id="files" class="filegrid"></div>
- <p id="empty" class="muted">No files yet. Tap Import.</p>
+<div class="card">
+<h2>My Folders</h2>
+<button class="folder" onclick="openFolder('Photos')">📷 Photos</button>
+<button class="folder" onclick="openFolder('Videos')">🎬 Videos</button>
+<button class="folder" onclick="openFolder('Music')">🎵 Music</button>
+<button class="folder" onclick="openFolder('Documents')">📁 Documents</button>
+</div>
+
+<div class="card">
+<h2 id="folderName">Select a folder</h2>
+<input type="file" id="fileInput" multiple>
+<button onclick="alert('Drive upload abhi connect nahi hua hai.')">Import Files</button>
+<button onclick="alert('Drive connection abhi setup hona baaki hai.')">Download</button>
+<button onclick="alert('Drive connection abhi setup hona baaki hai.')">Delete</button>
+</div>
 </section>
 </main>
 
 <script>
-let currentFolder="";
-let data={Photos:[],Videos:[],Music:[],Documents:[]};
-
-function login(){
- if(!document.getElementById("uid").value.trim()||!document.getElementById("pass").value){
-  alert("Enter User ID and Password");return;
- }
- document.getElementById("login").classList.add("hidden");
- document.getElementById("home").classList.remove("hidden");
-}
-function logout(){
- document.getElementById("home").classList.add("hidden");
- document.getElementById("inside").classList.add("hidden");
- document.getElementById("login").classList.remove("hidden");
-}
 function openFolder(name){
- currentFolder=name;
- document.getElementById("home").classList.add("hidden");
- document.getElementById("inside").classList.remove("hidden");
- document.getElementById("folderTitle").textContent=name;
- render();
-}
-function goHome(){
- document.getElementById("inside").classList.add("hidden");
- document.getElementById("home").classList.remove("hidden");
-}
-function addFiles(e){
- for(let file of e.target.files){
-  let type=file.type;
-  let folder=type.startsWith("image/")?"Photos":
-  type.startsWith("video/")?"Videos":
-  type.startsWith("audio/")?"Music":"Documents";
-  data[folder].push({file,url:URL.createObjectURL(file),selected:false});
- }
- e.target.value="";
- render();
-}
-function render(){
- let area=document.getElementById("files");
- area.innerHTML="";
- let list=data[currentFolder];
- document.getElementById("empty").classList.toggle("hidden",list.length>0);
- list.forEach((item,i)=>{
-  let f=item.file;
-  let media="";
-  if(currentFolder==="Photos")media=`<img src="${item.url}">`;
-  else if(currentFolder==="Videos")media=`<video src="${item.url}" controls></video>`;
-  else if(currentFolder==="Music")media=`<div class="doc">🎵</div><audio src="${item.url}" controls></audio>`;
-  else media=`<div class="doc">📄</div>`;
-  let card=document.createElement("div");
-  card.className="file";
-  card.innerHTML=media+`<p>${escapeHTML(f.name)}</p>
-  <label><input type="checkbox" ${item.selected?"checked":""} onchange="toggle(${i},this.checked)"> Select</label>
-  <button class="secondary" onclick="downloadOne(${i})">↓ Download</button>`;
-  area.appendChild(card);
- });
-}
-function escapeHTML(s){
- return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-}
-function toggle(i,v){data[currentFolder][i].selected=v}
-function selectAll(){
- data[currentFolder].forEach(x=>x.selected=true);
- render();
-}
-function downloadOne(i){
- let x=data[currentFolder][i];
- let a=document.createElement("a");
- a.href=x.url;a.download=x.file.name;a.click();
-}
-function downloadSelected(){
- let list=data[currentFolder];
- let chosen=list.map((x,i)=>x.selected?i:-1).filter(i=>i>=0);
- if(!chosen.length){alert("Select files first");return}
- chosen.forEach(downloadOne);
-}
-function deleteSelected(){
- let list=data[currentFolder];
- if(!list.some(x=>x.selected)){alert("Select files first");return}
- if(!confirm("Delete selected files?"))return;
- list.filter(x=>x.selected).forEach(x=>URL.revokeObjectURL(x.url));
- data[currentFolder]=list.filter(x=>!x.selected);
- render();
+document.getElementById('folderName').innerText=name;
 }
 </script>
 </body>
-</html>
+</html></html>
