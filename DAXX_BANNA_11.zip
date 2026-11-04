@@ -1,67 +1,143 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DAXX BANNA 11</title>
+
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#101522;color:white;font-family:Arial,sans-serif}
-header{padding:22px;background:#192338;text-align:center}
-h1{margin:0;color:#71b7ff}
-main{max-width:650px;margin:35px auto;padding:20px}
-.card{background:#202c42;padding:25px;border-radius:18px;margin-bottom:18px}
-button{width:100%;padding:15px;border:0;border-radius:10px;background:#3488ed;color:white;font-size:16px;margin-top:12px}
-input{width:100%;padding:13px;border-radius:9px;border:0;margin-top:12px}
-.folder{display:block;text-align:left;background:#293750}
-small{color:#b7c5d9}
-#dashboard{display:none}
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #101522;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+header {
+  padding: 22px;
+  background: #192338;
+  text-align: center;
+}
+
+h1 {
+  margin: 0;
+  color: #71b7ff;
+}
+
+main {
+  max-width: 650px;
+  margin: 35px auto;
+  padding: 20px;
+}
+
+.card {
+  background: #202c42;
+  padding: 25px;
+  border-radius: 18px;
+  margin-bottom: 18px;
+}
+
+button {
+  width: 100%;
+  padding: 15px;
+  border: 0;
+  border-radius: 10px;
+  background: #3488ed;
+  color: white;
+  font-size: 16px;
+  margin-top: 12px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+}
+
+.folder {
+  display: block;
+  text-align: left;
+  background: #293750;
+}
+
+input {
+  width: 100%;
+  padding: 13px;
+  border-radius: 9px;
+  border: 0;
+  margin-top: 12px;
+}
+
+#dashboard {
+  display: none;
+}
+
+#message {
+  color: #b7c5d9;
+  font-size: 14px;
+  margin-top: 12px;
+}
 </style>
 </head>
+
 <body>
+
 <header>
-<h1>DAXX BANNA 11</h1>
-<p>My Personal Cloud Storage</p>
+  <h1>DAXX BANNA 11</h1>
+  <p>My Personal Cloud Storage</p>
 </header>
 
 <main>
+
 <section class="card" id="login">
-<h2>Welcome</h2>
-<p>Sign in to use your personal file space.</p>
-<button onclick="signInWithGoogle()">
-  Continue with Google
-</button>
+  <h2>Welcome</h2>
+  <p>Sign in to use your personal file space.</p>
+
+  <button id="googleButton" type="button" onclick="signInWithGoogle()">
+    Continue with Google
+  </button>
+
+  <p id="message"></p>
 </section>
 
 <section id="dashboard">
-<div class="card">
-<h2>My Storage</h2>
-<p>Your personal file space</p>
-</div>
 
-<div class="card">
-<h2>My Folders</h2>
-<button class="folder" onclick="openFolder('Photos')">📷 Photos</button>
-<button class="folder" onclick="openFolder('Videos')">🎬 Videos</button>
-<button class="folder" onclick="openFolder('Music')">🎵 Music</button>
-<button class="folder" onclick="openFolder('Documents')">📁 Documents</button>
-</div>
+  <div class="card">
+    <h2>My Storage</h2>
+    <p>Your personal file space</p>
+  </div>
 
-<div class="card">
-<h2 id="folderName">Select a folder</h2>
-<input type="file" id="fileInput" multiple>
-<button onclick="alert('Drive upload abhi connect nahi hua hai.')">Import Files</button>
-<button onclick="alert('Drive connection abhi setup hona baaki hai.')">Download</button>
-<button onclick="alert('Drive connection abhi setup hona baaki hai.')">Delete</button>
-</div>
+  <div class="card">
+    <h2>My Folders</h2>
+
+    <button class="folder" onclick="openFolder('Photos')">📷 Photos</button>
+    <button class="folder" onclick="openFolder('Videos')">🎬 Videos</button>
+    <button class="folder" onclick="openFolder('Music')">🎵 Music</button>
+    <button class="folder" onclick="openFolder('Documents')">📁 Documents</button>
+  </div>
+
+  <div class="card">
+    <h2 id="folderName">Select a folder</h2>
+
+    <input type="file" id="fileInput" multiple>
+
+    <button onclick="importFiles()">Import Files</button>
+    <button onclick="alert('Cloud download abhi connect nahi hua hai.')">Download</button>
+    <button onclick="alert('Cloud delete abhi connect nahi hua hai.')">Delete</button>
+  </div>
+
+  <div class="card">
+    <button onclick="logout()">Logout</button>
+  </div>
+
 </section>
 </main>
 
-<script>
-function openFolder(name){
-document.getElementById('folderName').innerText=name;
-}
-</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
 const supabaseClient = supabase.createClient(
@@ -69,52 +145,95 @@ const supabaseClient = supabase.createClient(
   "sb_publishable_rG7RBl5EY45PrNRUCGp1TQ_yTRIbSJH"
 );
 
+function openFolder(name) {
+  document.getElementById("folderName").innerText = name;
+}
+
 function showDashboard() {
   document.getElementById("login").style.display = "none";
   document.getElementById("dashboard").style.display = "block";
 }
 
-async function checkLogin() {
-  const params = new URLSearchParams(window.location.hash.substring(1));
-  const accessToken = params.get("access_token");
-  const refreshToken = params.get("refresh_token");
+function showLogin() {
+  document.getElementById("login").style.display = "block";
+  document.getElementById("dashboard").style.display = "none";
+}
 
-  if (accessToken && refreshToken) {
-    const { data, error } = await supabaseClient.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken
+async function signInWithGoogle() {
+  const button = document.getElementById("googleButton");
+  const message = document.getElementById("message");
+
+  button.disabled = true;
+  message.innerText = "Connecting to Google...";
+
+  try {
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: "https://rajputdalpatsinh1.github.io/DAXX-BANNA-11/"
+      }
     });
 
     if (error) {
-      alert("Login error: " + error.message);
+      message.innerText = error.message;
+      button.disabled = false;
+    }
+  } catch (error) {
+    message.innerText = error.message;
+    button.disabled = false;
+  }
+}
+
+async function checkLogin() {
+  try {
+    const { data, error } = await supabaseClient.auth.getSession();
+
+    if (error) {
+      document.getElementById("message").innerText = error.message;
       return;
     }
 
-    window.history.replaceState(
-      {},
-      document.title,
-      window.location.pathname + window.location.search
-    );
-
-    if (data.session) showDashboard();
-    return;
+    if (data.session) {
+      showDashboard();
+    } else {
+      showLogin();
+    }
+  } catch (error) {
+    document.getElementById("message").innerText = error.message;
   }
-
-  const { data, error } = await supabaseClient.auth.getSession();
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  if (data.session) showDashboard();
 }
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
-  if (session) showDashboard();
+  if (session) {
+    showDashboard();
+  } else if (event === "SIGNED_OUT") {
+    showLogin();
+  }
 });
+
+async function logout() {
+  const { error } = await supabaseClient.auth.signOut();
+
+  if (error) {
+    alert(error.message);
+  } else {
+    showLogin();
+  }
+}
+
+function importFiles() {
+  const files = document.getElementById("fileInput").files;
+
+  if (!files.length) {
+    alert("Pehle files select karo.");
+    return;
+  }
+
+  alert("File selection successful. Cloud upload abhi connect karna baaki hai.");
+}
 
 checkLogin();
 </script>
+
 </body>
 </html>
