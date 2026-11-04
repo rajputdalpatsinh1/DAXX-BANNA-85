@@ -28,8 +28,8 @@ small{color:#b7c5d9}
 <section class="card" id="login">
 <h2>Welcome</h2>
 <p>Sign in to use your personal file space.</p>
-<button onclick="alert('Google Drive connection abhi setup hona baaki hai.')">
-Continue with Google
+<button onclick="signInWithGoogle()">
+  Continue with Google
 </button>
 </section>
 
@@ -61,6 +61,24 @@ Continue with Google
 function openFolder(name){
 document.getElementById('folderName').innerText=name;
 }
+</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const supabaseClient = supabase.createClient(
+  "https://dsxmzcicvjtzlrvjbnpr.supabase.co",
+  "sb_publishable_VzxflnAf_Nq-Un4yFCgTkA_jAII6J_T"
+);
+
+async function signInWithGoogle() {
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: "https://rajputdalpatsinh1.github.io/DAXX-BANNA-11/"
+    }
+  });
+
+  if (error) alert(error.message);
+}
 </script>
 </body>
-</html></html>
+</html></html> 
