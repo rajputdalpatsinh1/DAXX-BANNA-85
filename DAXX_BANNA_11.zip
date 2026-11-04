@@ -66,7 +66,7 @@ document.getElementById('folderName').innerText=name;
 <script>
 const supabaseClient = supabase.createClient(
   "https://dsxmzcicvjtzlrvjbnpr.supabase.co",
-  "YOUR_PUBLISHABLE_KEY"
+  "sb_publishable_VzxflnAf_Nq-Un4yFCgTkA_jAII6J_T"
 );
 
 async function signInWithGoogle() {
