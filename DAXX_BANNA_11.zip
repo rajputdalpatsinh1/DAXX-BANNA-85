@@ -1,0 +1,598 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DAXX BANNA 11</title>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101522;color:white;font-family:Georgia,"Times New Roman",serif}
+header{background:#192338;padding:18px;text-align:center}
+h1{color:#71b7ff;margin:0;font-size:25px}
+main{max-width:900px;margin:auto;padding:16px}
+.card{background:#202c42;padding:16px;border-radius:12px;margin:14px 0}
+input,button{font-family:inherit;font-size:15px;border-radius:8px;padding:12px}
+input{width:100%;margin:7px 0;border:1px solid #52627c;background:#101522;color:white}
+button{border:0;background:#3488ed;color:white;cursor:pointer;margin:4px}
+button:disabled{opacity:.5}
+.secondary{background:#45536b}
+.danger{background:#c44242}
+.hidden{display:none!important}
+.categories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.category{min-height:82px;font-size:17px}
+.small{font-size:13px;color:#b9c7dc}
+#message{white-space:pre-wrap;color:#8fc6ff}
+.toolbar{display:flex;flex-wrap:wrap;gap:5px;margin:12px 0}
+.toolbar button{flex:1 1 110px}
+.file{background:#192338;padding:11px;border-radius:9px;margin:10px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.file-name{flex:1;min-width:100px;overflow-wrap:anywhere}
+.file-actions{display:flex;flex-wrap:wrap}
+.file-actions button{font-size:13px;padding:9px}
+.file-check{width:20px;height:20px;flex-shrink:0}
+.thumb{width:65px;height:65px;object-fit:cover;border-radius:7px;background:#101522}
+.file-icon{width:65px;height:65px;display:flex;align-items:center;justify-content:center;font-size:29px;background:#101522;border-radius:7px}
+#preview{position:fixed;inset:0;z-index:10;background:#080d17ee;display:flex;align-items:center;justify-content:center;padding:15px}
+#previewContent{width:100%;max-width:850px;max-height:90vh;overflow:auto;background:#202c42;padding:15px;border-radius:12px}
+#previewContent img,#previewContent video{max-width:100%;max-height:70vh;display:block;margin:12px auto}
+#previewContent audio{width:100%;margin:15px 0}
+#previewContent iframe{width:100%;height:70vh;background:white;border:0}
+.backBtn{background:#45536b}
+.empty{text-align:center;padding:22px;color:#b9c7dc}
+@media(max-width:480px){
+ main{padding:10px}
+ .file-actions{width:100%}
+ .file-actions button{flex:1}
+}
+</style>
+</head>
+
+<body>
+<header>
+ <h1>DAXX BANNA 11</h1>
+ <div class="small">Secure Cloud Storage</div>
+</header>
+
+<main>
+
+<section id="loginBox" class="card">
+ <h2>Login</h2>
+ <input id="userId" placeholder="User ID" autocomplete="username">
+ <input id="password" type="password" placeholder="Password" autocomplete="current-password">
+ <button id="loginBtn" onclick="login()">Login</button>
+ <p id="loginMessage" class="small"></p>
+</section>
+
+<section id="dashboard" class="hidden">
+ <div class="card">
+  <h2>My Personal Cloud Storage</h2>
+  <p class="small">Choose a folder to open your files.</p>
+  <div class="categories">
+   <button class="category" onclick="openCategory('Photos')">📷 Photos</button>
+   <button class="category" onclick="openCategory('Videos')">🎬 Videos</button>
+   <button class="category" onclick="openCategory('Music')">🎵 Music</button>
+   <button class="category" onclick="openCategory('Documents')">📄 Documents</button>
+   <button class="category" onclick="openCategory('Other')">📁 Other</button>
+  </div>
+  <div style="text-align:right;margin-top:12px">
+   <button class="danger" onclick="logout()">Logout</button>
+  </div>
+ </div>
+</section>
+
+<section id="folderScreen" class="hidden">
+ <div class="card">
+  <button class="backBtn" onclick="goHome()">← Back</button>
+  <h2 id="folderTitle">📷 Photos</h2>
+  <p class="small">Your files in this folder</p>
+
+  <input id="fileInput" type="file" multiple class="hidden"
+   onchange="showSelectedFiles()">
+
+  <div class="toolbar">
+   <button onclick="document.getElementById('fileInput').click()">＋ Import</button>
+   <button class="secondary" onclick="toggleSelect()">Select</button>
+   <button class="secondary" onclick="downloadSelected()">Download</button>
+   <button class="danger" onclick="deleteSelected()">Delete</button>
+  </div>
+
+  <p id="selectedUpload" class="small"></p>
+  <button id="startUpload" class="hidden" onclick="uploadFiles()">Start Upload</button>
+  <p id="uploadStatus" class="small"></p>
+  <p id="fileCount" class="small"></p>
+  <div id="fileList"></div>
+ </div>
+</section>
+
+<div id="preview" class="hidden" onclick="closePreview(event)">
+ <div id="previewContent" onclick="event.stopPropagation()">
+  <button class="danger" onclick="closePreview()">Close</button>
+  <div id="previewBody"></div>
+ </div>
+</div>
+
+<p id="message"></p>
+</main>
+
+<script>
+const API="https://dsxmzcicvjtzlrvjbnpr.supabase.co/functions/v1/daxu-login";
+
+let token=sessionStorage.getItem("daxx_session")||"";
+let currentFolder="Photos";
+let currentFiles=[];
+let selectedFiles=new Set();
+let selectMode=false;
+let previewUrl=null;
+let thumbUrls=[];
+
+const folderIcons={
+ Photos:"📷 Photos",
+ Videos:"🎬 Videos",
+ Music:"🎵 Music",
+ Documents:"📄 Documents",
+ Other:"📁 Other"
+};
+
+function showMessage(text){
+ document.getElementById("message").textContent=text||"";
+}
+
+function setLoggedIn(value){
+ document.getElementById("loginBox").classList.toggle("hidden",value);
+ document.getElementById("dashboard").classList.toggle("hidden",!value);
+ document.getElementById("folderScreen").classList.add("hidden");
+}
+
+async function api(data){
+ const response=await fetch(API,{
+  method:"POST",
+  headers:{
+   "Content-Type":"application/json",
+   "Authorization":"Bearer "+token
+  },
+  body:JSON.stringify(data)
+ });
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok||result.error){
+  throw new Error(result.error||result.message||"Request failed");
+ }
+ return result;
+}
+
+async function login(){
+ const id=document.getElementById("userId").value.trim();
+ const pass=document.getElementById("password").value;
+ const button=document.getElementById("loginBtn");
+ const output=document.getElementById("loginMessage");
+
+ if(!id||!pass){
+  output.textContent="User ID aur Password bharo.";
+  return;
+ }
+
+ button.disabled=true;
+ output.textContent="Logging in...";
+
+ try{
+  const response=await fetch(API,{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({
+    action:"login",
+    userId:id,
+    password:pass
+   })
+  });
+
+  const data=await response.json();
+  if(!response.ok||data.error)throw new Error(data.error||"Login failed");
+  if(!data.token)throw new Error("Login token nahi mila.");
+
+  token=data.token;
+  sessionStorage.setItem("daxx_session",token);
+  document.getElementById("password").value="";
+  output.textContent="";
+  setLoggedIn(true);
+ }catch(error){
+  output.textContent=error.message;
+ }finally{
+  button.disabled=false;
+ }
+}
+
+function logout(){
+ token="";
+ sessionStorage.removeItem("daxx_session");
+ currentFiles=[];
+ selectedFiles.clear();
+ setLoggedIn(false);
+ showMessage("You have logged out.");
+}
+
+function openCategory(name){
+ currentFolder=name;
+ selectMode=false;
+ selectedFiles.clear();
+
+ document.getElementById("dashboard").classList.add("hidden");
+ document.getElementById("folderScreen").classList.remove("hidden");
+ document.getElementById("folderTitle").textContent=folderIcons[name]||name;
+ document.getElementById("fileInput").value="";
+ document.getElementById("selectedUpload").textContent="";
+ document.getElementById("startUpload").classList.add("hidden");
+ document.getElementById("uploadStatus").textContent="";
+ document.getElementById("fileList").innerHTML="";
+ loadFiles();
+}
+
+function goHome(){
+ document.getElementById("folderScreen").classList.add("hidden");
+ document.getElementById("dashboard").classList.remove("hidden");
+ showMessage("");
+}
+
+function clearThumbnails(){
+ thumbUrls.forEach(url=>URL.revokeObjectURL(url));
+ thumbUrls=[];
+}
+
+async function loadFiles(){
+ if(!token)return;
+
+ const list=document.getElementById("fileList");
+ list.innerHTML='<div class="empty">Loading files...</div>';
+
+ try{
+  const data=await api({
+   action:"list",
+   folder:currentFolder
+  });
+
+  currentFiles=Array.isArray(data.files)?data.files:[];
+  selectedFiles.clear();
+  clearThumbnails();
+  renderFiles();
+ }catch(error){
+  list.textContent=error.message;
+ }
+}
+
+function fileIcon(file){
+ const type=file.mimeType||"";
+ if(type.startsWith("image/"))return "🖼️";
+ if(type.startsWith("video/"))return "🎬";
+ if(type.startsWith("audio/"))return "🎵";
+ if(type.includes("pdf"))return "📕";
+ if(type.includes("word"))return "📝";
+ if(type.includes("sheet")||type.includes("excel"))return "📊";
+ return "📄";
+}
+
+function renderFiles(){
+ const list=document.getElementById("fileList");
+ list.innerHTML="";
+
+ document.getElementById("fileCount").textContent=
+ currentFiles.length+" file(s)";
+
+ if(currentFiles.length===0){
+  list.innerHTML='<div class="empty">📂<br>Is folder mein abhi koi file nahi hai.</div>';
+  return;
+ }
+
+ currentFiles.forEach((file,index)=>{
+  const row=document.createElement("div");
+  row.className="file";
+
+  const checkbox=document.createElement("input");
+  checkbox.type="checkbox";
+  checkbox.className="file-check";
+  checkbox.checked=selectedFiles.has(file.id);
+  checkbox.classList.toggle("hidden",!selectMode);
+  checkbox.onchange=()=>{
+   if(checkbox.checked)selectedFiles.add(file.id);
+   else selectedFiles.delete(file.id);
+  };
+
+  const icon=document.createElement("div");
+  icon.className="file-icon";
+  icon.textContent=fileIcon(file);
+
+  if((file.mimeType||"").startsWith("image/")&&index<20){
+   const img=document.createElement("img");
+   img.className="thumb";
+   img.alt=file.name||"Photo";
+   img.loading="lazy";
+   img.onerror=()=>{img.replaceWith(icon)};
+   row.append(checkbox,img);
+   loadThumbnail(file,img,icon);
+  }else{
+   row.append(checkbox,icon);
+  }
+
+  const label=document.createElement("div");
+  label.className="file-name";
+  label.textContent=file.name||"Unnamed file";
+
+  const actions=document.createElement("div");
+  actions.className="file-actions";
+
+  const openBtn=document.createElement("button");
+  openBtn.textContent="Open";
+  openBtn.onclick=()=>previewFile(file);
+
+  const downloadBtn=document.createElement("button");
+  downloadBtn.textContent="Download";
+  downloadBtn.onclick=()=>downloadFile(file);
+
+  const deleteBtn=document.createElement("button");
+  deleteBtn.textContent="Delete";
+  deleteBtn.className="danger";
+  deleteBtn.onclick=()=>deleteFile(file);
+
+  actions.append(openBtn,downloadBtn,deleteBtn);
+  row.append(label,actions);
+  list.appendChild(row);
+ });
+}
+
+async function loadThumbnail(file,img,icon){
+ try{
+  const blob=await downloadBlob(file);
+  const url=URL.createObjectURL(blob);
+  thumbUrls.push(url);
+  img.src=url;
+ }catch(error){
+  img.replaceWith(icon);
+ }
+}
+
+function toggleSelect(){
+ selectMode=!selectMode;
+ const button=document.querySelector(".toolbar button:nth-child(2)");
+ button.textContent=selectMode?"Cancel Select":"Select";
+ renderFiles();
+}
+
+function showSelectedFiles(){
+ const files=Array.from(document.getElementById("fileInput").files||[]);
+ document.getElementById("selectedUpload").textContent=
+  files.length?files.length+" file(s) selected":"";
+ document.getElementById("startUpload").classList.toggle("hidden",!files.length);
+}
+
+async function uploadFiles(){
+ const input=document.getElementById("fileInput");
+ const files=Array.from(input.files||[]);
+ const status=document.getElementById("uploadStatus");
+
+ if(!files.length){
+  status.textContent="Pehle Import se files select karo.";
+  return;
+ }
+
+ const button=document.getElementById("startUpload");
+ button.disabled=true;
+
+ try{
+  for(let i=0;i<files.length;i++){
+   const file=files[i];
+   status.textContent="Uploading "+(i+1)+"/"+files.length+": "+file.name;
+
+   const params=new URLSearchParams({
+    action:"upload",
+    folder:currentFolder,
+    name:file.name
+   });
+
+   const response=await fetch(API+"?"+params.toString(),{
+    method:"POST",
+    headers:{
+     "Authorization":"Bearer "+token,
+     "Content-Type":file.type||"application/octet-stream"
+    },
+    body:file
+   });
+
+   const result=await response.json().catch(()=>({}));
+   if(!response.ok||result.error){
+    throw new Error(result.error||"Upload failed: "+file.name);
+   }
+  }
+
+  status.textContent="Upload complete!";
+  input.value="";
+  document.getElementById("selectedUpload").textContent="";
+  button.classList.add("hidden");
+  await loadFiles();
+ }catch(error){
+  status.textContent=error.message;
+ }finally{
+  button.disabled=false;
+ }
+}
+
+async function downloadBlob(file){
+ const params=new URLSearchParams({
+  action:"download",
+  fileId:file.id
+ });
+
+ const response=await fetch(API+"?"+params.toString(),{
+  headers:{"Authorization":"Bearer "+token}
+ });
+
+ if(!response.ok){
+  const error=await response.json().catch(()=>({}));
+  throw new Error(error.error||"Download failed");
+ }
+
+ return await response.blob();
+}
+
+function saveBlob(blob,name){
+ const url=URL.createObjectURL(blob);
+ const link=document.createElement("a");
+ link.href=url;
+ link.download=name||"download";
+ document.body.appendChild(link);
+ link.click();
+ link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+
+async function downloadFile(file){
+ try{
+  showMessage("Downloading "+file.name+"...");
+  const blob=await downloadBlob(file);
+  saveBlob(blob,file.name);
+  showMessage("Download started.");
+ }catch(error){
+  showMessage(error.message);
+ }
+}
+
+async function downloadSelected(){
+ const files=currentFiles.filter(file=>selectedFiles.has(file.id));
+
+ if(!files.length){
+  showMessage("Select button dabakar files select karo.");
+  return;
+ }
+
+ if(!confirm(files.length+" selected files download karein?"))return;
+
+ try{
+  for(let i=0;i<files.length;i++){
+   showMessage("Downloading "+(i+1)+"/"+files.length+": "+files[i].name);
+   const blob=await downloadBlob(files[i]);
+   saveBlob(blob,files[i].name);
+   await new Promise(resolve=>setTimeout(resolve,700));
+  }
+  showMessage("Download request complete.");
+ }catch(error){
+  showMessage(error.message);
+ }
+}
+
+async function previewFile(file){
+ try{
+  showMessage("Opening "+file.name+"...");
+  const blob=await downloadBlob(file);
+
+  if(previewUrl)URL.revokeObjectURL(previewUrl);
+  previewUrl=URL.createObjectURL(blob);
+
+  const type=file.mimeType||blob.type||"";
+  const body=document.getElementById("previewBody");
+  body.innerHTML="";
+
+  if(type.startsWith("image/")){
+   const img=document.createElement("img");
+   img.src=previewUrl;
+   body.appendChild(img);
+  }else if(type.startsWith("video/")){
+   const video=document.createElement("video");
+   video.src=previewUrl;
+   video.controls=true;
+   video.playsInline=true;
+   body.appendChild(video);
+  }else if(type.startsWith("audio/")){
+   const audio=document.createElement("audio");
+   audio.src=previewUrl;
+   audio.controls=true;
+   audio.autoplay=false;
+   body.appendChild(audio);
+  }else if(type==="application/pdf"){
+   const iframe=document.createElement("iframe");
+   iframe.src=previewUrl;
+   body.appendChild(iframe);
+  }else{
+   const message=document.createElement("p");
+   message.textContent="Is file ka direct preview available nahi hai. Download karke open kar sakte ho.";
+   body.appendChild(message);
+
+   const link=document.createElement("a");
+   link.href=previewUrl;
+   link.download=file.name||"download";
+   link.textContent="Download / Open File";
+   link.style.color="#71b7ff";
+   body.appendChild(link);
+  }
+
+  document.getElementById("preview").classList.remove("hidden");
+  showMessage("");
+ }catch(error){
+  showMessage(error.message);
+ }
+}
+
+function closePreview(event){
+ if(event&&event.target!==document.getElementById("preview"))return;
+
+ document.getElementById("preview").classList.add("hidden");
+ document.getElementById("previewBody").innerHTML="";
+
+ if(previewUrl){
+  URL.revokeObjectURL(previewUrl);
+  previewUrl=null;
+ }
+}
+
+async function deleteFile(file){
+ if(!confirm("Delete "+file.name+"?"))return;
+
+ try{
+  await api({action:"delete",fileId:file.id});
+  selectedFiles.delete(file.id);
+  await loadFiles();
+  showMessage("File deleted.");
+ }catch(error){
+  showMessage(error.message);
+ }
+}
+
+async function deleteSelected(){
+ const ids=Array.from(selectedFiles);
+
+ if(!ids.length){
+  showMessage("Select button dabakar files select karo.");
+  return;
+ }
+
+ if(!confirm(ids.length+" selected files permanently delete karein?"))return;
+
+ try{
+  for(let i=0;i<ids.length;i++){
+   showMessage("Deleting "+(i+1)+"/"+ids.length);
+   await api({action:"delete",fileId:ids[i]});
+  }
+
+  selectedFiles.clear();
+  await loadFiles();
+  showMessage("Selected files deleted.");
+ }catch(error){
+  showMessage(error.message);
+ }
+}
+
+async function startApp(){
+ const params=new URLSearchParams(window.location.search);
+
+ if(params.get("drive")==="connected"){
+  window.history.replaceState({},document.title,window.location.pathname);
+  showMessage("Google Drive connection successful.");
+ }
+
+ if(token){
+  setLoggedIn(true);
+ }else{
+  setLoggedIn(false);
+ }
+}
+
+startApp();
+</script>
+</body>
+</html>
