@@ -32,7 +32,30 @@ button:disabled{opacity:.5}
 .file-actions button{font-size:13px;padding:9px}
 .file-check{width:20px;height:20px;flex-shrink:0}
 .thumb{width:65px;height:65px;object-fit:cover;border-radius:7px;background:#101522}
-.file-icon{width:65px;height:65px;display:flex;align-items:center;justify-content:center;font-size:29px;background:#101522;border-radius:7px}
+.file-icon{width:65px;height:65px;display:flex;align-items:center;justify-content:center;font-size:29px;background:#101522;border-radius:7px;flex-shrink:0}
+
+/* Video thumbnail preview */
+.video-thumb-wrap{
+ width:100px;height:70px;position:relative;flex-shrink:0;
+ background:#101522;border-radius:7px;overflow:hidden;
+}
+.video-thumb{
+ width:100%;height:100%;object-fit:cover;display:block;
+}
+.video-play-icon{
+ position:absolute;left:50%;top:50%;
+ transform:translate(-50%,-50%);
+ background:#0009;border-radius:50%;
+ width:30px;height:30px;
+ display:flex;align-items:center;justify-content:center;
+ font-size:15px;pointer-events:none;
+}
+.video-duration{
+ position:absolute;right:4px;bottom:4px;
+ background:#000c;color:white;
+ font-family:Arial,sans-serif;
+ font-size:11px;padding:3px 5px;border-radius:4px;
+}
 #preview{position:fixed;inset:0;z-index:10;background:#080d17ee;display:flex;align-items:center;justify-content:center;padding:15px}
 #previewContent{width:100%;max-width:850px;max-height:90vh;overflow:auto;background:#202c42;padding:15px;border-radius:12px}
 #previewContent img,#previewContent video{max-width:100%;max-height:70vh;display:block;margin:12px auto}
@@ -44,6 +67,7 @@ button:disabled{opacity:.5}
  main{padding:10px}
  .file-actions{width:100%}
  .file-actions button{flex:1}
+ .video-thumb-wrap{width:100px;height:70px}
 }
 </style>
 </head>
@@ -269,6 +293,78 @@ function fileIcon(file){
  return "📄";
 }
 
+/* Convert seconds into video duration text */
+function formatDuration(seconds){
+ if(!Number.isFinite(seconds)||seconds<0)return "--:--";
+
+ seconds=Math.floor(seconds);
+ const hours=Math.floor(seconds/3600);
+ const minutes=Math.floor((seconds%3600)/60);
+ const secs=seconds%60;
+
+ if(hours>0){
+  return hours+":"+String(minutes).padStart(2,"0")+":"+String(secs).padStart(2,"0");
+ }
+ return minutes+":"+String(secs).padStart(2,"0");
+}
+
+/* Create a thumbnail from the video's first few seconds */
+async function createVideoThumbnail(file,img,durationLabel){
+ let blobUrl=null;
+ let video=null;
+
+ try{
+  const blob=await downloadBlob(file);
+  blobUrl=URL.createObjectURL(blob);
+
+  video=document.createElement("video");
+  video.preload="auto";
+  video.muted=true;
+  video.playsInline=true;
+  video.src=blobUrl;
+
+  await new Promise((resolve,reject)=>{
+   video.onloadedmetadata=resolve;
+   video.onerror=()=>reject(new Error("Video preview unavailable"));
+  });
+
+  durationLabel.textContent=formatDuration(video.duration);
+
+  const seekTime=Number.isFinite(video.duration)&&video.duration>1
+   ?Math.min(1,video.duration/4):0;
+
+  if(seekTime>0){
+   await new Promise((resolve)=>{
+    video.onseeked=resolve;
+    video.onerror=resolve;
+    video.currentTime=seekTime;
+   });
+  }
+
+  const canvas=document.createElement("canvas");
+  canvas.width=320;
+  canvas.height=180;
+
+  const ctx=canvas.getContext("2d");
+  if(!ctx)throw new Error("Canvas unavailable");
+
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  img.src=canvas.toDataURL("image/jpeg",0.75);
+  img.classList.remove("hidden");
+
+ }catch(error){
+  img.classList.add("hidden");
+  durationLabel.textContent="Video";
+ }finally{
+  if(video){
+   video.pause();
+   video.removeAttribute("src");
+   video.load();
+  }
+  if(blobUrl)URL.revokeObjectURL(blobUrl);
+ }
+}
+
 function renderFiles(){
  const list=document.getElementById("fileList");
  list.innerHTML="";
@@ -295,11 +391,36 @@ function renderFiles(){
    else selectedFiles.delete(file.id);
   };
 
+  const type=file.mimeType||"";
+  const isVideo=type.startsWith("video/");
+  const isImage=type.startsWith("image/");
+
   const icon=document.createElement("div");
   icon.className="file-icon";
   icon.textContent=fileIcon(file);
 
-  if((file.mimeType||"").startsWith("image/")&&index<20){
+  if(isVideo&&index<20){
+   const wrap=document.createElement("div");
+   wrap.className="video-thumb-wrap";
+
+   const img=document.createElement("img");
+   img.className="video-thumb hidden";
+   img.alt=file.name||"Video thumbnail";
+
+   const play=document.createElement("div");
+   play.className="video-play-icon";
+   play.textContent="▶";
+
+   const duration=document.createElement("div");
+   duration.className="video-duration";
+   duration.textContent="...";
+
+   wrap.append(img,play,duration);
+   row.append(checkbox,wrap);
+
+   createVideoThumbnail(file,img,duration);
+
+  }else if(isImage&&index<20){
    const img=document.createElement("img");
    img.className="thumb";
    img.alt=file.name||"Photo";
@@ -307,6 +428,7 @@ function renderFiles(){
    img.onerror=()=>{img.replaceWith(icon)};
    row.append(checkbox,img);
    loadThumbnail(file,img,icon);
+
   }else{
    row.append(checkbox,icon);
   }
@@ -497,6 +619,7 @@ async function previewFile(file){
    video.src=previewUrl;
    video.controls=true;
    video.playsInline=true;
+   video.setAttribute("playsinline","");
    body.appendChild(video);
   }else if(type.startsWith("audio/")){
    const audio=document.createElement("audio");
